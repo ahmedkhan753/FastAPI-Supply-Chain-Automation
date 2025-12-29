@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pymysql
+python-dotenv
+python-multipart  # For future form data if needed
+cryptography  # For secure password hashing
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-jose[cryptography]  # For JWT token handling
+pydantic[email]
