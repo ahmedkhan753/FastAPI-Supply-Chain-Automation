@@ -43,3 +43,24 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
+
+class Stock(Base):
+    __tablename__ = "stock"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_name = Column(String(100), unique=True, nullable=False)
+    quantity = Column(Integer, default=0, nullable=False)
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    payment_type = Column(ENUM("advance", "remaining", name="payment_type_enum"), nullable=False)
+    paid_at = Column(DateTime, default=datetime.utcnow)
+
+    order = relationship("Order", back_populates="payments")
+
+# Add back-relationship to Order
+Order.payments = relationship("Payment", back_populates="order")

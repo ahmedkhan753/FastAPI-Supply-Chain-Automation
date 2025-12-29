@@ -38,7 +38,54 @@ class OrderResponse(OrderBase):
     remaining_payment: float
     status: str
     created_at: datetime
+    payments: list['PaymentResponse'] = []
+    fully_paid: bool = False
 
     class Config:
         from_attributes = True
+
+class OrderConfirm(BaseModel):
+    order_id: int
+
+class OrderAdminResponse(OrderResponse):
+    username: str
+    payments: list['PaymentResponse'] = []
+    fully_paid: bool = False
+
+    class Config:
+        from_attributes = True
+
+class StockResponse(BaseModel):
+    id: int
+    item_name: str
+    quantity: int
+
+    class Config:
+        from_attributes = True
+
+class StockAction(BaseModel):
+    order_id: int
+    action: Literal["dispatch", "request_stock"]
+
+
+class PaymentResponse(BaseModel):
+    id: int
+    amount: float
+    payment_type: str
+    paid_at: datetime
+    class Config:
+        from_attributes = True
+
+class ConfirmOrderInput(BaseModel):
+    order_id: int
+    remaining_payment_collected: float
+
+# New input schema for confirm with payment
+class ConfirmOrderInput(BaseModel):
+    order_id: int
+    remaining_payment_collected: float  # Amount salesman collected now
+
+
+
+        
 

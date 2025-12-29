@@ -5,6 +5,7 @@ from ..database import get_db
 from ..crud import create_user, get_user_by_username
 from ..auth import verify_password, create_access_token
 from ..schemas import UserCreate, UserResponse, Token
+from sqlalchemy.orm import joinedload
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

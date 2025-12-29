@@ -6,12 +6,18 @@ import sqlalchemy
 from .routers.auth import router as auth_router
 from .routers.protected import router as protected_router
 from .routers.orders import router as orders_router
+from .routers.salesman import router as salesman_router
+from .routers.warehouse import router as warehouse_router
+from .routers.manufacturer import router as manufacturer_router
 
 
 app = FastAPI(title="Distributor Automation System")
 app.include_router(auth_router)
 app.include_router(protected_router)
 app.include_router(orders_router)
+app.include_router(salesman_router)
+app.include_router(warehouse_router)
+app.include_router(manufacturer_router)
 
 # Improved startup: Wait for DB with retries
 @app.on_event("startup")
