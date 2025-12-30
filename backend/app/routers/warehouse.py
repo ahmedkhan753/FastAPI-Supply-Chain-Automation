@@ -1,44 +1,45 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import joinedload
 from ..database import get_db
 from ..dependencies import get_current_user, require_role
-from ..models import Order, Stock, User
-from ..schemas import OrderAdminResponse, StockAction
+from ..models import Order, ProductStock, User  # ← Changed Stock → ProductStock
+from ..schemas import OrderAdminResponse, StockAction, StockResponse, delivered
 
 router = APIRouter(prefix="/warehouse", tags=["Warehouse Manager"])
+
 @router.get("/confirmed-orders", response_model=list[OrderAdminResponse])
 def get_confirmed_orders(
     current_user = Depends(require_role(["warehouse_manager"])),
     db: Session = Depends(get_db)
 ):
-    # Join Order with User to get username
+    # Get confirmed orders with shopkeeper username and payments
     orders = (
         db.query(Order, User.username)
-        .options(joinedload(Order.payments))
         .join(User, Order.user_id == User.id)
         .filter(Order.status == "confirmed")
         .all()
     )
 
-    # Manually construct the response with username
     result = []
     for order, username in orders:
         order_data = {
             "id": order.id,
             "user_id": order.user_id,
+            "product_name": order.product_name,        # ← Now shows actual product
+            "quantity": order.quantity,
             "total_amount": order.total_amount,
             "advance_payment": order.advance_payment,
             "remaining_payment": order.remaining_payment,
             "status": order.status,
             "created_at": order.created_at,
-            "username": username,  # Add the shopkeeper's username
-            "payments": order.payments,
+            "username": username,
+            "payments": [],  # You can add joinedload(Order.payments) later if needed
             "fully_paid": (order.remaining_payment == 0)
         }
         result.append(OrderAdminResponse(**order_data))
 
     return result
+
 
 @router.post("/process-order")
 def process_order(
@@ -49,28 +50,64 @@ def process_order(
     order = db.query(Order).filter(Order.id == action_data.order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    if order.status != "confirmed":
-        raise HTTPException(status_code=400, detail="Only confirmed orders can be processed")
     
-    # Simple stock check logic (for demo purposes)
-    stock = db.query(Stock).filter(Stock.item_name == "Product A").first()
-    if stock is None:
-        # create initial stock record if not exists
-        stock = Stock(item_name="Product A", quantity=5)
-        db.add(stock)
-        db.commit()
+    # Find stock for the SPECIFIC product in the order
+    stock = db.query(ProductStock).filter(ProductStock.product_name == order.product_name).first()
 
     if action_data.action == "dispatch":
-        if stock.quantity > 0 :
-            stock.quantity -= 1
-            order.status = "dispatched"
-            db.commit()
-            db.refresh(order)
-            return {"detail": "Order dispatched successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Insufficient stock to dispatch the order")
+        # Check if enough stock
+        if not stock or stock.quantity < order.quantity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for {order.product_name}. Available: {stock.quantity if stock else 0}, Required: {order.quantity}"
+            )
+        
+        # Dispatch: reduce stock
+        stock.quantity -= order.quantity
+        order.status = "dispatched"  # You can add "delivered" step later
+        db.commit()
+        db.refresh(order)
+
+        return {
+            "message": "Order dispatched successfully",
+            "order_id": order.id,
+            "product": order.product_name,
+            "dispatched_quantity": order.quantity,
+            "remaining_stock": stock.quantity
+        }
+
     elif action_data.action == "request_stock":
         order.status = "stock_requested"
         db.commit()
         db.refresh(order)
-        return {"detail": "Stock request noted for the order"}
+
+        return {
+            "message": "Stock request sent to manufacturer",
+            "order_id": order.id,
+            "product": order.product_name,
+            "requested_quantity": order.quantity
+        }
+
+
+@router.get("/stock", response_model=list[StockResponse])
+def get_stock(
+    current_user = Depends(require_role(["warehouse_manager"])),
+    db: Session = Depends(get_db)
+):
+    all_stock = db.query(ProductStock).all()
+    results = []
+    for stock in all_stock:
+        results.append(StockResponse(item_name=stock.product_name, quantity=stock.quantity, id=stock.id))
+    return results
+
+
+@router.get("/Delivered-Orders", response_model=list[delivered])
+def get_delivered_orders(
+    current_user = Depends(require_role(["warehouse_manager"])),
+    db: Session = Depends(get_db)
+):
+    orders = db.query(Order).filter(Order.status == "delivered").all()
+    result = []
+    for order in orders:
+        result.append(delivered(order_id=order.id, product_name=order.product_name, quantity=order.quantity))
+    return result

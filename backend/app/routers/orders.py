@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 from ..database import get_db
 from ..dependencies import get_current_user, require_role
-from ..models import Order, Payment
+from ..models import Order, Payment, ProductStock
 from ..schemas import OrderCreate, OrderResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -11,17 +11,20 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 @router.post("/", response_model=OrderResponse)
 def place_order(
     order_in: OrderCreate,
-    current_user = Depends(require_role(["shopkeeper"])),  # ← String, not Enum
+    current_user = Depends(require_role(["shopkeeper"])),
     db: Session = Depends(get_db)
 ):
-    if order_in.advance_payment > order_in.total_amount * 0.6:
+    # CALCULATE total (fixed price 100 per unit for now)
+    total_amount = order_in.quantity * 100
+    
+    if order_in.advance_payment > total_amount * 0.6:
         raise HTTPException(
             status_code=400,
             detail="Advance payment cannot exceed 60% of total amount."
         )
 
-    remaining = order_in.total_amount - order_in.advance_payment
-    if remaining < 0:
+    remaining_payment = total_amount - order_in.advance_payment
+    if remaining_payment < 0:
         raise HTTPException(
             status_code=400,
             detail="Advance payment cannot exceed total amount."
@@ -29,14 +32,17 @@ def place_order(
 
     db_order = Order(
         user_id=current_user.id,
-        total_amount=order_in.total_amount,
+        product_name=order_in.product_name,
+        quantity=order_in.quantity,
+        total_amount=total_amount,
         advance_payment=order_in.advance_payment,
-        remaining_payment=remaining
+        remaining_payment=remaining_payment
     )
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
-
+    
+    # CREATE advance payment
     if order_in.advance_payment > 0:
         advance_payment = Payment(
             order_id=db_order.id,
@@ -44,9 +50,8 @@ def place_order(
             payment_type="advance"
         )
         db.add(advance_payment)
-
-    db.commit()
-    db.refresh(db_order)
+        db.commit()
+        db.refresh(db_order)
     return db_order
 
 @router.get("/my-orders", response_model=list[OrderResponse])

@@ -29,10 +29,14 @@ class OrderBase(BaseModel):
     total_amount: float
     advance_payment: Optional[float] = 0.0
 
-class OrderCreate(OrderBase):
-    pass # Shopkeeper sends total + optional advance payment
+class OrderCreate(BaseModel):
+    product_name: str
+    quantity: int
+    advance_payment: Optional[float] = 0.0
 
 class OrderResponse(OrderBase):
+    product_name: str
+    quantity: int
     id: int
     user_id: int
     remaining_payment: float
@@ -48,6 +52,8 @@ class OrderConfirm(BaseModel):
     order_id: int
 
 class OrderAdminResponse(OrderResponse):
+    product_name: str
+    quantity: int
     username: str
     payments: list['PaymentResponse'] = []
     fully_paid: bool = False
@@ -65,7 +71,7 @@ class StockResponse(BaseModel):
 
 class StockAction(BaseModel):
     order_id: int
-    action: Literal["dispatch", "request_stock"]
+    action: Literal["dispatch", "request_stock", "delivered"]
 
 
 class PaymentResponse(BaseModel):
@@ -76,14 +82,16 @@ class PaymentResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class ConfirmOrderInput(BaseModel):
-    order_id: int
-    remaining_payment_collected: float
 
 # New input schema for confirm with payment
 class ConfirmOrderInput(BaseModel):
     order_id: int
     remaining_payment_collected: float  # Amount salesman collected now
+
+class delivered(BaseModel):
+    order_id: int
+    product_name: str
+    quantity: int
 
 
 

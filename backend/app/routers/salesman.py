@@ -28,6 +28,8 @@ def get_pending_orders(
     for order, username in orders:
         order_data = {
             "id": order.id,
+            "product_name": order.product_name,
+            "quantity": order.quantity,
             "user_id": order.user_id,
             "total_amount": order.total_amount,
             "advance_payment": order.advance_payment,

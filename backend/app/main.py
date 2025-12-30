@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
 import time
@@ -12,13 +13,20 @@ from .routers.manufacturer import router as manufacturer_router
 
 
 app = FastAPI(title="Distributor Automation System")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 app.include_router(auth_router)
 app.include_router(protected_router)
 app.include_router(orders_router)
 app.include_router(salesman_router)
 app.include_router(warehouse_router)
 app.include_router(manufacturer_router)
-
 # Improved startup: Wait for DB with retries
 @app.on_event("startup")
 def on_startup():

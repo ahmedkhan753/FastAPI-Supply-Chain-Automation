@@ -14,7 +14,10 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "5173:5173"
+    volumes:
+      - ./frontend/distributor-web:/app
+      - /app/node_modules
     depends_on:
       - backend
   db:

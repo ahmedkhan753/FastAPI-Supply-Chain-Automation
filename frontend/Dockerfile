@@ -1,15 +1,15 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Copy the React app
-COPY client/ ./
+COPY distributor-web/ ./
 
 # Install dependencies
 RUN npm install
 
 # Expose port
-EXPOSE 3000
+EXPOSE 5173
 
 # Start the app
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev", "--", "--host"]

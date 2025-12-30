@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..dependencies import get_current_user, require_role
-from ..models import Order, Stock, User
+from ..models import Order, ProductStock, User
 from ..schemas import OrderAdminResponse
 from sqlalchemy.orm import joinedload
 
@@ -26,6 +26,8 @@ def get_stock_requests(
         order_data = {
             "id": order.id,
             "user_id": order.user_id,
+            "product_name": order.product_name,
+            "quantity": order.quantity,
             "total_amount": order.total_amount,
             "advance_payment": order.advance_payment,
             "remaining_payment": order.remaining_payment,
@@ -52,14 +54,14 @@ def ship_stock(
     if order.status != "stock_requested":
         raise HTTPException(status_code=400, detail="Order is not in stock_requested status")
 
-    # Increase stock (assume 10 units shipped)
-    stock = db.query(Stock).filter(Stock.item_name == "Product A").first()
+    # Increase stock
+    stock = db.query(ProductStock).filter(ProductStock.product_name == order.product_name).first()
     if not stock:
-        stock = Stock(item_name="Product A", quantity=0)
+        stock = ProductStock(product_name=order.product_name, quantity=0)
         db.add(stock)
     
-    stock.quantity += 10
-    order.status = "dispatched"  # Now warehouse can deliver
+    stock.quantity += order.quantity
+    order.status = "delivered"  # Now warehouse can deliver
     db.commit()
     db.refresh(order)
 

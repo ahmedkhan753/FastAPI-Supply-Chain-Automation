@@ -15,8 +15,15 @@ class User(Base):
         ENUM("shopkeeper", "salesman", "warehouse_manager", "manufacturer", name="user_role_enum"),
         nullable=False
     )
-
     orders = relationship("Order", back_populates="user")
+
+
+class ProductStock(Base):
+    __tablename__ = "product_stock"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_name = Column(String(100), unique=True, nullable=False)
+    quantity = Column(Integer, default=0, nullable=False)
 
 
 class Order(Base):
@@ -24,32 +31,21 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    product_name = Column(String(100), nullable=False)
+    quantity = Column(Integer, nullable=False)
     total_amount = Column(Float, nullable=False)
     advance_payment = Column(Float, default=0.0)
     remaining_payment = Column(Float, nullable=False)
     status = Column(
-        ENUM(
-            "placed",
-            "confirmed",
-            "stock_checked",
-            "dispatched",
-            "delivered",
-            "stock_requested",
-            name="order_status_enum"
-        ),
-        default="placed",  # ← lowercase string
+        ENUM("placed", "confirmed", "dispatched", "delivered", "stock_requested", name="order_status_enum"),
+        default="placed",
         nullable=False
     )
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
+    payments = relationship("Payment", back_populates="order")
 
-class Stock(Base):
-    __tablename__ = "stock"
-
-    id = Column(Integer, primary_key=True, index=True)
-    item_name = Column(String(100), unique=True, nullable=False)
-    quantity = Column(Integer, default=0, nullable=False)
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -57,10 +53,7 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     amount = Column(Float, nullable=False)
-    payment_type = Column(ENUM("advance", "remaining", name="payment_type_enum"), nullable=False)
+    payment_type = Column(ENUM("advance", "remaining", "stock_supply", name="payment_type_enum"), nullable=False)
     paid_at = Column(DateTime, default=datetime.utcnow)
 
     order = relationship("Order", back_populates="payments")
-
-# Add back-relationship to Order
-Order.payments = relationship("Payment", back_populates="order")
