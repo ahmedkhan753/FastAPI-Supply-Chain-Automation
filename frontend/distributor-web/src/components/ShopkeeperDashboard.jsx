@@ -15,8 +15,11 @@ import {
     Box,
     Chip,
     Grid,
-    InputAdornment
+    InputAdornment,
+    IconButton,
+    Tooltip
 } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
 import api from '../services/api';
 
 const PRICE_PER_UNIT = 100;
@@ -38,6 +41,27 @@ const ShopkeeperDashboard = () => {
         } catch (error) {
             console.error("Failed to fetch orders:", error);
             setMessage({ type: 'error', text: 'Failed to fetch order history.' });
+            setOpenSnackbar(true);
+        }
+    };
+
+    const handleDownloadInvoice = async (orderId) => {
+        try {
+            const response = await api.get(`/orders/${orderId}/invoice`, {
+                responseType: 'blob' // Important for file handling
+            });
+
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice_${orderId}.pdf`); // Filename
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error("Failed to download invoice:", error);
+            setMessage({ type: 'error', text: 'Failed to download invoice.' });
             setOpenSnackbar(true);
         }
     };
@@ -159,12 +183,13 @@ const ShopkeeperDashboard = () => {
                             <TableCell align="right"><b>Advance Paid</b></TableCell>
                             <TableCell align="right"><b>Remaining</b></TableCell>
                             <TableCell align="center"><b>Status</b></TableCell>
+                            <TableCell align="center"><b>Invoice</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {orders.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} align="center">No orders found.</TableCell>
+                                <TableCell colSpan={8} align="center">No orders found.</TableCell>
                             </TableRow>
                         ) : (
                             orders.map((order) => (
@@ -184,6 +209,13 @@ const ShopkeeperDashboard = () => {
                                             size="small"
                                             variant="outlined"
                                         />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Tooltip title="Download Invoice">
+                                            <IconButton onClick={() => handleDownloadInvoice(order.id)} color="primary">
+                                                <DownloadIcon />
+                                            </IconButton>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
                             ))
