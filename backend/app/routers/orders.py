@@ -124,7 +124,7 @@ def generate_invoice(
     c.setFont("Helvetica", 12)
     c.drawString(50, y, order.product_name)
     c.drawString(300, y, str(order.quantity))
-    c.drawString(450, y, f"${order.total_amount:.2f}")
+    c.drawString(450, y, f"₹{order.total_amount:.2f}")
 
     # Payment Details
     y -= 50
@@ -132,13 +132,13 @@ def generate_invoice(
     y -= 30
     
     c.drawString(350, y, "Total Amount:")
-    c.drawString(450, y, f"${order.total_amount:.2f}")
+    c.drawString(450, y, f"₹{order.total_amount:.2f}")
     y -= 20
     c.drawString(350, y, "Advance Paid:")
-    c.drawString(450, y, f"${order.advance_payment:.2f}")
+    c.drawString(450, y, f"₹{order.advance_payment:.2f}")
     y -= 20
     c.drawString(350, y, "Remaining Due:")
-    c.drawString(450, y, f"${order.remaining_payment:.2f}")
+    c.drawString(450, y, f"₹{order.remaining_payment:.2f}")
     y -= 20
     
     # Status
