@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert } from '@mui/material';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert, Chip, Box, Stack } from '@mui/material';
 import api from '../services/api';
 
 const SalesmanDashboard = () => {
     const [orders, setOrders] = useState([]);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [remainingPayment, setRemainingPayment] = useState(0);
-    const [message, setMessage] = useState('');
+    const [deliverOrder, setDeliverOrder] = useState(null);
+    const [collectedAmount, setCollectedAmount] = useState(0);
+    const [message, setMessage] = useState({ type: 'success', text: '' });
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
     useEffect(() => {
@@ -22,99 +22,153 @@ const SalesmanDashboard = () => {
         }
     };
 
-    const handleConfirmClick = (order) => {
-        setSelectedOrder(order);
-        setRemainingPayment(order.remaining_payment); // Pre-fill with actual remaining amount
-    };
-
-    const handleConfirmOrder = async () => {
-        if (!selectedOrder) return;
+    const handleConfirmOrder = async (orderId) => {
         try {
-            await api.post('/salesman/confirm-order', {
-                order_id: selectedOrder.id,
-                remaining_payment_collected: parseFloat(remainingPayment)
-            });
-            setMessage('Order confirmed!');
+            await api.post('/salesman/confirm-order', { order_id: orderId });
+            setMessage({ type: 'success', text: 'Order confirmed! It is now with the warehouse manager.' });
             setOpenSnackbar(true);
-            setSelectedOrder(null);
             fetchOrders();
         } catch (error) {
             console.error("Failed to confirm order:", error);
-            setMessage('Failed to confirm order.');
+            setMessage({ type: 'error', text: 'Failed to confirm order.' });
             setOpenSnackbar(true);
+        }
+    };
+
+    const openDeliverDialog = (order) => {
+        setDeliverOrder(order);
+        setCollectedAmount(order.remaining_payment);
+    };
+
+    const handleDeliverOrder = async () => {
+        if (!deliverOrder) return;
+        try {
+            await api.post('/salesman/deliver-order', {
+                order_id: deliverOrder.id,
+                collected_amount: parseFloat(collectedAmount)
+            });
+            setMessage({ type: 'success', text: 'Order delivered and payment collected!' });
+            setOpenSnackbar(true);
+            setDeliverOrder(null);
+            fetchOrders();
+        } catch (error) {
+            console.error("Failed to deliver order:", error);
+            setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to deliver order.' });
+            setOpenSnackbar(true);
+        }
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'dispatched': return 'info';
+            case 'placed': return 'warning';
+            default: return 'default';
         }
     };
 
     return (
         <Container sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom>Salesman Dashboard</Typography>
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="h6">Pending Orders</Typography>
+            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                Salesman Dashboard
+            </Typography>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom>Order Management</Typography>
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            <TableCell>ID</TableCell>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Shopkeeper</TableCell>
-                            <TableCell>Product</TableCell>
-                            <TableCell>Quantity</TableCell>
-                            <TableCell>Total</TableCell>
-                            <TableCell>Advance</TableCell>
-                            <TableCell>Remaining</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Action</TableCell>
+                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                            <TableCell><b>ID</b></TableCell>
+                            <TableCell><b>Shopkeeper</b></TableCell>
+                            <TableCell><b>Product</b></TableCell>
+                            <TableCell align="right"><b>Qty</b></TableCell>
+                            <TableCell align="right"><b>Total</b></TableCell>
+                            <TableCell align="right"><b>Remaining</b></TableCell>
+                            <TableCell align="center"><b>Status</b></TableCell>
+                            <TableCell align="center"><b>Actions</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {orders.map((order) => (
-                            <TableRow key={order.id}>
-                                <TableCell>{order.id}</TableCell>
-                                <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                                <TableCell>{order.username}</TableCell>
-                                <TableCell>{order.product_name}</TableCell>
-                                <TableCell>{order.quantity}</TableCell>
-                                <TableCell>${order.total_amount}</TableCell>
-                                <TableCell>${order.advance_payment}</TableCell>
-                                <TableCell>${order.remaining_payment}</TableCell>
-                                <TableCell>{order.status}</TableCell>
-                                <TableCell>
-                                    <Button variant="contained" color="primary" size="small" onClick={() => handleConfirmClick(order)}>
-                                        Confirm
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {orders.length === 0 ? (
+                            <TableRow><TableCell colSpan={8} align="center">No pending tasks.</TableCell></TableRow>
+                        ) : (
+                            orders.map((order) => (
+                                <TableRow key={order.id} hover>
+                                    <TableCell>{order.id}</TableCell>
+                                    <TableCell>{order.username}</TableCell>
+                                    <TableCell>{order.product_name}</TableCell>
+                                    <TableCell align="right">{order.quantity}</TableCell>
+                                    <TableCell align="right">₹{order.total_amount}</TableCell>
+                                    <TableCell align="right" sx={{ color: 'error.main', fontWeight: 'bold' }}>
+                                        ₹{order.remaining_payment}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Chip
+                                            label={order.status.toUpperCase()}
+                                            color={getStatusColor(order.status)}
+                                            size="small"
+                                        />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Stack direction="row" spacing={1} justifyContent="center">
+                                            {order.status === 'placed' && (
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    size="small"
+                                                    onClick={() => handleConfirmOrder(order.id)}
+                                                >
+                                                    Confirm Order
+                                                </Button>
+                                            )}
+                                            {order.status === 'dispatched' && (
+                                                <Button
+                                                    variant="contained"
+                                                    color="success"
+                                                    size="small"
+                                                    onClick={() => openDeliverDialog(order)}
+                                                >
+                                                    Deliver & Pay
+                                                </Button>
+                                            )}
+                                        </Stack>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </Paper>
 
-            <Dialog open={!!selectedOrder} onClose={() => setSelectedOrder(null)}>
-                <DialogTitle>Confirm Order #{selectedOrder?.id}</DialogTitle>
+            <Dialog open={!!deliverOrder} onClose={() => setDeliverOrder(null)}>
+                <DialogTitle>Complete Delivery: Order #{deliverOrder?.id}</DialogTitle>
                 <DialogContent>
-                    <Typography gutterBottom>
-                        <strong>Product:</strong> {selectedOrder?.product_name}<br />
-                        <strong>Total Amount:</strong> ${selectedOrder?.total_amount}<br />
-                        <strong>Already Paid:</strong> ${selectedOrder?.advance_payment}<br />
-                        <strong>Remaining Due:</strong> ${selectedOrder?.remaining_payment}
-                    </Typography>
-                    <TextField
-                        label="Remaining Payment Collected"
-                        type="number"
-                        fullWidth
-                        margin="normal"
-                        value={remainingPayment}
-                        onChange={(e) => setRemainingPayment(e.target.value)}
-                        helperText={`Amount to collect now. Default is full remaining: $${selectedOrder?.remaining_payment}`}
-                    />
+                    <Box sx={{ mt: 1 }}>
+                        <Typography variant="body1" gutterBottom>
+                            Collect remaining payment from <b>{deliverOrder?.username}</b>
+                        </Typography>
+                        <Typography variant="h6" color="primary" gutterBottom>
+                            Due: ₹{deliverOrder?.remaining_payment}
+                        </Typography>
+                        <TextField
+                            label="Collected Amount"
+                            type="number"
+                            fullWidth
+                            margin="normal"
+                            value={collectedAmount}
+                            onChange={(e) => setCollectedAmount(e.target.value)}
+                            InputProps={{ inputProps: { step: 0.01 } }}
+                        />
+                    </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setSelectedOrder(null)}>Cancel</Button>
-                    <Button onClick={handleConfirmOrder} variant="contained" color="primary">Confirm Order</Button>
+                    <Button onClick={() => setDeliverOrder(null)}>Cancel</Button>
+                    <Button onClick={handleDeliverOrder} variant="contained" color="success">Verify & Deliver</Button>
                 </DialogActions>
             </Dialog>
 
             <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
-                <Alert severity="success" onClose={() => setOpenSnackbar(false)}>{message}</Alert>
+                <Alert severity={message.type} onClose={() => setOpenSnackbar(false)}>
+                    {message.text}
+                </Alert>
             </Snackbar>
         </Container>
     );

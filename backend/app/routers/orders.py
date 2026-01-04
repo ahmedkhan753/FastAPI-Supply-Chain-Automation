@@ -19,9 +19,17 @@ def place_order(
     current_user = Depends(require_role(["shopkeeper"])),
     db: Session = Depends(get_db)
 ):
-    # CALCULATE total (fixed price 100 per unit for now)
-    total_amount = order_in.quantity * 100
-    
+    # CALCULATE total
+    amounts = [100, 150, 200, 250, 50, 30, 120, 80]  # Example fixed prices for products
+    product_prices = { "candy": 100, "snacks": 150, "chocolates": 200, "biscuits": 250,
+                       "cold_drinks": 50, "chewing_gums": 30, "juices": 120, "jelly": 80 }
+    if order_in.product_name not in product_prices:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid product name."
+        )
+    total_amount = order_in.quantity * product_prices[order_in.product_name]
+
     if order_in.advance_payment > total_amount * 0.6:
         raise HTTPException(
             status_code=400,

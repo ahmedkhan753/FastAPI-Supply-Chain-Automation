@@ -17,17 +17,27 @@ import {
     Grid,
     InputAdornment,
     IconButton,
-    Tooltip
+    Tooltip,
+    MenuItem
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import api from '../services/api';
 
-const PRICE_PER_UNIT = 100;
+const PRODUCT_PRICES = {
+    "candy": 100,
+    "snacks": 150,
+    "chocolates": 200,
+    "biscuits": 250,
+    "cold_drinks": 50,
+    "chewing_gums": 30,
+    "juices": 120,
+    "jelly": 80
+};
 
 const ShopkeeperDashboard = () => {
     const [orders, setOrders] = useState([]);
-    const [newOrder, setNewOrder] = useState({ product_name: '', quantity: 1, advance_payment: 0 });
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const [newOrder, setNewOrder] = useState({ product_name: 'candy', quantity: 1, advance_payment: 0 });
+    const [message, setMessage] = useState({ type: 'success', text: '' });
     const [openSnackbar, setOpenSnackbar] = useState(false);
 
     useEffect(() => {
@@ -40,22 +50,18 @@ const ShopkeeperDashboard = () => {
             setOrders(response.data);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
-            setMessage({ type: 'error', text: 'Failed to fetch order history.' });
-            setOpenSnackbar(true);
         }
     };
 
     const handleDownloadInvoice = async (orderId) => {
         try {
             const response = await api.get(`/orders/${orderId}/invoice`, {
-                responseType: 'blob' // Important for file handling
+                responseType: 'blob'
             });
-
-            // Create a URL for the blob
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `invoice_${orderId}.pdf`); // Filename
+            link.setAttribute('download', `invoice_${orderId}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -66,26 +72,24 @@ const ShopkeeperDashboard = () => {
         }
     };
 
-    const calculatedTotal = newOrder.quantity * PRICE_PER_UNIT;
+    const calculatedTotal = newOrder.quantity * (PRODUCT_PRICES[newOrder.product_name] || 0);
     const maxAdvance = calculatedTotal * 0.6;
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
-
         if (newOrder.advance_payment > maxAdvance) {
-            setMessage({ type: 'error', text: `Advance payment cannot exceed 60% of total amount (Max: ₹${maxAdvance})` });
+            setMessage({ type: 'error', text: `Advance payment cannot exceed 60% (Max: ₹${maxAdvance})` });
             setOpenSnackbar(true);
             return;
         }
-
         try {
             await api.post('/orders/', newOrder);
             setMessage({ type: 'success', text: 'Order placed successfully!' });
-            setNewOrder({ product_name: '', quantity: 1, advance_payment: 0 });
+            setNewOrder({ product_name: 'candy', quantity: 1, advance_payment: 0 });
             fetchOrders();
             setOpenSnackbar(true);
         } catch (error) {
-            setMessage({ type: 'error', text: 'Failed to place order. ' + (error.response?.data?.detail || '') });
+            setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to place order.' });
             setOpenSnackbar(true);
         }
     };
@@ -96,6 +100,9 @@ const ShopkeeperDashboard = () => {
             case 'dispatched': return 'info';
             case 'confirmed': return 'primary';
             case 'placed': return 'warning';
+            case 'stock_requested': return 'secondary';
+            case 'payment_requested': return 'error';
+            case 'paid_to_manufacturer': return 'secondary';
             default: return 'default';
         }
     };
@@ -106,22 +113,25 @@ const ShopkeeperDashboard = () => {
                 Shopkeeper Dashboard
             </Typography>
 
-            {/* Place Order Section */}
             <Paper elevation={3} sx={{ p: 4, mb: 5, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-                    Place New Order
-                </Typography>
+                <Typography variant="h6" gutterBottom>Place New Order</Typography>
                 <form onSubmit={handleCreateOrder}>
                     <Grid container spacing={3}>
                         <Grid item xs={12} sm={4}>
                             <TextField
-                                label="Product Name"
+                                select
+                                label="Product"
                                 fullWidth
                                 value={newOrder.product_name}
                                 onChange={(e) => setNewOrder({ ...newOrder, product_name: e.target.value })}
                                 required
-                                variant="outlined"
-                            />
+                            >
+                                {Object.keys(PRODUCT_PRICES).map((product) => (
+                                    <MenuItem key={product} value={product}>
+                                        {product.replace(/_/g, ' ').toUpperCase()} (₹{PRODUCT_PRICES[product]}/unit)
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                         <Grid item xs={12} sm={3}>
                             <TextField
@@ -129,12 +139,8 @@ const ShopkeeperDashboard = () => {
                                 type="number"
                                 fullWidth
                                 value={newOrder.quantity}
-                                onChange={(e) => {
-                                    const qty = Math.max(1, parseInt(e.target.value) || 0);
-                                    setNewOrder({ ...newOrder, quantity: qty });
-                                }}
+                                onChange={(e) => setNewOrder({ ...newOrder, quantity: Math.max(1, parseInt(e.target.value) || 0) })}
                                 required
-                                InputProps={{ inputProps: { min: 1 } }}
                                 helperText={`Total Cost: ₹${calculatedTotal}`}
                             />
                         </Grid>
@@ -147,20 +153,13 @@ const ShopkeeperDashboard = () => {
                                 onChange={(e) => setNewOrder({ ...newOrder, advance_payment: parseFloat(e.target.value) || 0 })}
                                 required
                                 InputProps={{
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                                    inputProps: { min: 0, max: maxAdvance }
+                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>
                                 }}
-                                helperText={`Max: ₹${maxAdvance} (60%)`}
+                                helperText={`Max (60%): ₹${maxAdvance.toFixed(2)}`}
                             />
                         </Grid>
                         <Grid item xs={12} sm={2} sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                size="large"
-                                fullWidth
-                                sx={{ height: '56px', fontWeight: 'bold' }}
-                            >
+                            <Button type="submit" variant="contained" size="large" fullWidth sx={{ height: '56px', fontWeight: 'bold' }}>
                                 ORDER
                             </Button>
                         </Grid>
@@ -168,19 +167,15 @@ const ShopkeeperDashboard = () => {
                 </form>
             </Paper>
 
-            {/* Order History Section */}
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-                    My Orders
-                </Typography>
+                <Typography variant="h6" gutterBottom>My Order History</Typography>
                 <Table>
                     <TableHead>
                         <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                             <TableCell><b>ID</b></TableCell>
                             <TableCell><b>Product</b></TableCell>
-                            <TableCell align="right"><b>Quantity</b></TableCell>
-                            <TableCell align="right"><b>Total Amount</b></TableCell>
-                            <TableCell align="right"><b>Advance Paid</b></TableCell>
+                            <TableCell align="right"><b>Qty</b></TableCell>
+                            <TableCell align="right"><b>Total</b></TableCell>
                             <TableCell align="right"><b>Remaining</b></TableCell>
                             <TableCell align="center"><b>Status</b></TableCell>
                             <TableCell align="center"><b>Invoice</b></TableCell>
@@ -188,34 +183,28 @@ const ShopkeeperDashboard = () => {
                     </TableHead>
                     <TableBody>
                         {orders.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={8} align="center">No orders found.</TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={7} align="center">No orders yet.</TableCell></TableRow>
                         ) : (
                             orders.map((order) => (
                                 <TableRow key={order.id} hover>
                                     <TableCell>{order.id}</TableCell>
-                                    <TableCell>{order.product_name}</TableCell>
+                                    <TableCell>{order.product_name.toUpperCase()}</TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
                                     <TableCell align="right">₹{order.total_amount}</TableCell>
-                                    <TableCell align="right">₹{order.advance_payment}</TableCell>
-                                    <TableCell align="right" sx={{ color: order.remaining_payment > 0 ? 'error.main' : 'green' }}>
+                                    <TableCell align="right" sx={{ color: order.remaining_payment > 0 ? 'error.main' : 'green', fontWeight: 'bold' }}>
                                         ₹{order.remaining_payment}
                                     </TableCell>
                                     <TableCell align="center">
                                         <Chip
-                                            label={order.status.toUpperCase()}
+                                            label={order.status.replace(/_/g, ' ').toUpperCase()}
                                             color={getStatusColor(order.status)}
                                             size="small"
-                                            variant="outlined"
                                         />
                                     </TableCell>
                                     <TableCell align="center">
-                                        <Tooltip title="Download Invoice">
-                                            <IconButton onClick={() => handleDownloadInvoice(order.id)} color="primary">
-                                                <DownloadIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <IconButton onClick={() => handleDownloadInvoice(order.id)} color="primary">
+                                            <DownloadIcon />
+                                        </IconButton>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -225,7 +214,7 @@ const ShopkeeperDashboard = () => {
             </Paper>
 
             <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
-                <Alert severity={message.type === 'success' ? 'success' : 'error'} onClose={() => setOpenSnackbar(false)}>
+                <Alert severity={message.type} onClose={() => setOpenSnackbar(false)}>
                     {message.text}
                 </Alert>
             </Snackbar>

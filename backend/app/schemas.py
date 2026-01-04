@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     role: Literal["shopkeeper", "salesman", "warehouse_manager", "manufacturer"]
+    product_name: Literal["candy", "snacks", "chocolates", "biscuits", "cold_drinks", "chewing_gums", "juices","jelly"]
 
 #For creating a user (registration)
 class UserCreate(UserBase):
@@ -41,6 +42,7 @@ class OrderResponse(OrderBase):
     user_id: int
     remaining_payment: float
     status: str
+    manufacturer_price: Optional[float] = 0.0
     created_at: datetime
     payments: list['PaymentResponse'] = []
     fully_paid: bool = False
@@ -86,12 +88,31 @@ class PaymentResponse(BaseModel):
 # New input schema for confirm with payment
 class ConfirmOrderInput(BaseModel):
     order_id: int
-    remaining_payment_collected: float  # Amount salesman collected now
+    #remaining_payment_collected: float  # Amount salesman collected now
 
 class delivered(BaseModel):
     order_id: int
     product_name: str
     quantity: int
+
+class PaymentRequest(BaseModel):
+    order_id: int
+    amount: float
+    payment_type: str
+
+    class Config:
+        from_attributes = True
+
+class PaymentRequestResponse(BaseModel):
+    total_amount: float
+
+class PayManufacturerInput(BaseModel):
+    order_id: int
+
+class DeliverOrderInput(BaseModel):
+    order_id: int
+    collected_amount: float
+    
 
 
 

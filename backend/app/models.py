@@ -37,7 +37,7 @@ class Order(Base):
     advance_payment = Column(Float, default=0.0)
     remaining_payment = Column(Float, nullable=False)
     status = Column(
-        ENUM("placed", "confirmed", "dispatched", "delivered", "stock_requested", name="order_status_enum"),
+        ENUM("placed", "confirmed", "dispatched", "delivered", "stock_requested", "payment_requested", "paid_to_manufacturer", name="order_status_enum"),
         default="placed",
         nullable=False
     )
