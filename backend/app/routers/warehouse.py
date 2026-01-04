@@ -191,7 +191,7 @@ def generate_manufacturer_invoice(
     
     c.setFont("Helvetica-Bold", 12)
     c.drawString(350, y, "TOTAL DUE:")
-    c.drawString(450, y, f"₹{m_price:.2f}")
+    c.drawString(450, y, f"Rs {m_price:.2f}")
     y -= 30
     
     # Status

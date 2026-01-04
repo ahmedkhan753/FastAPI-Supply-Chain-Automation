@@ -78,7 +78,7 @@ const ShopkeeperDashboard = () => {
     const handleCreateOrder = async (e) => {
         e.preventDefault();
         if (newOrder.advance_payment > maxAdvance) {
-            setMessage({ type: 'error', text: `Advance payment cannot exceed 60% (Max: ₹${maxAdvance})` });
+            setMessage({ type: 'error', text: `Advance payment cannot exceed 60% (Max: Rs ${maxAdvance})` });
             setOpenSnackbar(true);
             return;
         }
@@ -128,7 +128,7 @@ const ShopkeeperDashboard = () => {
                             >
                                 {Object.keys(PRODUCT_PRICES).map((product) => (
                                     <MenuItem key={product} value={product}>
-                                        {product.replace(/_/g, ' ').toUpperCase()} (₹{PRODUCT_PRICES[product]}/unit)
+                                        {product.replace(/_/g, ' ').toUpperCase()} (Rs {PRODUCT_PRICES[product]}/unit)
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -141,7 +141,7 @@ const ShopkeeperDashboard = () => {
                                 value={newOrder.quantity}
                                 onChange={(e) => setNewOrder({ ...newOrder, quantity: Math.max(1, parseInt(e.target.value) || 0) })}
                                 required
-                                helperText={`Total Cost: ₹${calculatedTotal}`}
+                                helperText={`Total Cost: Rs ${calculatedTotal}`}
                             />
                         </Grid>
                         <Grid item xs={12} sm={3}>
@@ -153,9 +153,9 @@ const ShopkeeperDashboard = () => {
                                 onChange={(e) => setNewOrder({ ...newOrder, advance_payment: parseFloat(e.target.value) || 0 })}
                                 required
                                 InputProps={{
-                                    startAdornment: <InputAdornment position="start">₹</InputAdornment>
+                                    startAdornment: <InputAdornment position="start">Rs</InputAdornment>
                                 }}
-                                helperText={`Max (60%): ₹${maxAdvance.toFixed(2)}`}
+                                helperText={`Max (60%): Rs ${maxAdvance.toFixed(2)}`}
                             />
                         </Grid>
                         <Grid item xs={12} sm={2} sx={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -190,9 +190,9 @@ const ShopkeeperDashboard = () => {
                                     <TableCell>{order.id}</TableCell>
                                     <TableCell>{order.product_name.toUpperCase()}</TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
-                                    <TableCell align="right">₹{order.total_amount}</TableCell>
+                                    <TableCell align="right">Rs {order.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ color: order.remaining_payment > 0 ? 'error.main' : 'green', fontWeight: 'bold' }}>
-                                        ₹{order.remaining_payment}
+                                        Rs {order.remaining_payment}
                                     </TableCell>
                                     <TableCell align="center">
                                         <Chip

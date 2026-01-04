@@ -166,9 +166,9 @@ const WarehouseDashboard = () => {
                                     <TableCell>{order.product_name}</TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
                                     <TableCell>{order.username}</TableCell>
-                                    <TableCell align="right">₹{order.total_amount}</TableCell>
+                                    <TableCell align="right">Rs {order.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 'bold', color: 'error.main' }}>
-                                        ₹{order.manufacturer_price}
+                                        Rs {order.manufacturer_price}
                                     </TableCell>
                                     <TableCell align="center">
                                         <Chip

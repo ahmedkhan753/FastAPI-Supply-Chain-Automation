@@ -96,9 +96,9 @@ const SalesmanDashboard = () => {
                                     <TableCell>{order.username}</TableCell>
                                     <TableCell>{order.product_name}</TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
-                                    <TableCell align="right">₹{order.total_amount}</TableCell>
+                                    <TableCell align="right">Rs {order.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ color: 'error.main', fontWeight: 'bold' }}>
-                                        ₹{order.remaining_payment}
+                                        Rs {order.remaining_payment}
                                     </TableCell>
                                     <TableCell align="center">
                                         <Chip
@@ -146,7 +146,7 @@ const SalesmanDashboard = () => {
                             Collect remaining payment from <b>{deliverOrder?.username}</b>
                         </Typography>
                         <Typography variant="h6" color="primary" gutterBottom>
-                            Due: ₹{deliverOrder?.remaining_payment}
+                            Due: Rs {deliverOrder?.remaining_payment}
                         </Typography>
                         <TextField
                             label="Collected Amount"
