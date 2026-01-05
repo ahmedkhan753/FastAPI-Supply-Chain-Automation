@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, Snackbar, Alert, Chip, Stack } from '@mui/material';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, Snackbar, Alert, Chip, Stack, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../services/api';
+import { PRODUCT_IMAGES, getProductImage, handleImageError } from '../constants/images';
+import { Avatar, Box } from '@mui/material';
 
 const ManufacturerDashboard = () => {
     const [requests, setRequests] = useState([]);
@@ -44,6 +47,12 @@ const ManufacturerDashboard = () => {
             setMessage({ type: 'error', text: 'Failed to ship stock. Make sure it is paid first.' });
             setOpenSnackbar(true);
         }
+    };
+
+    const handleRemoveRequest = (requestId) => {
+        setRequests(requests.filter(req => req.id !== requestId));
+        setMessage({ type: 'info', text: 'Request removed from view.' });
+        setOpenSnackbar(true);
     };
 
     const handleDownloadInvoice = async (orderId) => {
@@ -103,7 +112,18 @@ const ManufacturerDashboard = () => {
                             requests.map((req) => (
                                 <TableRow key={req.id} hover>
                                     <TableCell>{req.id}</TableCell>
-                                    <TableCell>{req.product_name}</TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Avatar
+                                                src={getProductImage(req.product_name)}
+                                                variant="rounded"
+                                                sx={{ width: 32, height: 32, bgcolor: '#f5f5f5' }}
+                                            >
+                                                {req.product_name[0]?.toUpperCase()}
+                                            </Avatar>
+                                            {req.product_name}
+                                        </Box>
+                                    </TableCell>
                                     <TableCell align="right">{req.quantity}</TableCell>
                                     <TableCell align="right">Rs {req.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -161,6 +181,9 @@ const ManufacturerDashboard = () => {
                                                     </Button>
                                                 </Stack>
                                             )}
+                                            <IconButton onClick={() => handleRemoveRequest(req.id)} color="error" size="small">
+                                                <DeleteIcon />
+                                            </IconButton>
                                         </Stack>
                                     </TableCell>
                                 </TableRow>

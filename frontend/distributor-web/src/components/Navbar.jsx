@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Avatar } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,8 +20,12 @@ const Navbar = () => {
                 </Typography>
                 {user ? (
                     <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`}
+                            sx={{ width: 32, height: 32, border: '2px solid #2563eb' }}
+                        />
                         <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                            {user.username} <span style={{ opacity: 0.5 }}>|</span> <span style={{ color: '#2563eb', textTransform: 'capitalize' }}>{user.role}</span>
+                            {user.username} <span style={{ opacity: 0.5 }}>|</span> <span style={{ color: '#2563eb', textTransform: 'capitalize' }}>{user.role.replace('_', ' ')}</span>
                         </Typography>
                         <Button variant="outlined" color="primary" size="small" onClick={handleLogout} sx={{ borderRadius: 20, px: 3 }}>
                             Logout

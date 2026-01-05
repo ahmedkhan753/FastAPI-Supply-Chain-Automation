@@ -16,9 +16,13 @@ import {
     CardContent,
     Box,
     Chip,
-    Stack
+    Stack,
+    IconButton
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../services/api';
+import { PRODUCT_IMAGES, getProductImage, handleImageError } from '../constants/images';
+import { Avatar } from '@mui/material';
 
 const WarehouseDashboard = () => {
     const [pendingOrders, setPendingOrders] = useState([]);
@@ -51,6 +55,12 @@ const WarehouseDashboard = () => {
         } catch (error) {
             console.error("Failed to fetch stock:", error);
         }
+    };
+
+    const handleRemoveOrder = (orderId) => {
+        setPendingOrders(pendingOrders.filter(order => order.id !== orderId));
+        setMessage({ type: 'info', text: 'Action item removed from view.' });
+        setOpenSnackbar(true);
     };
 
     const handleProcessOrder = async (orderId, action) => {
@@ -113,9 +123,12 @@ const WarehouseDashboard = () => {
 
     return (
         <Container sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom sx={{ color: '#2e7d32', fontWeight: 'bold' }}>
-                Warehouse Dashboard
-            </Typography>
+            <Box display="flex" alignItems="center" gap={2} sx={{ mb: 4 }}>
+                <Avatar sx={{ bgcolor: '#2e7d32', width: 56, height: 56 }}>W</Avatar>
+                <Typography variant="h4" sx={{ color: '#2e7d32', fontWeight: 'bold' }}>
+                    Warehouse Dashboard
+                </Typography>
+            </Box>
 
             {/* Stock Overview */}
             <Paper elevation={3} sx={{ p: 3, mb: 4, backgroundColor: '#f1f8e9', borderRadius: 2 }}>
@@ -126,9 +139,18 @@ const WarehouseDashboard = () => {
                             <Grid item xs={12} sm={6} md={3} key={item.id}>
                                 <Card sx={{ height: '100%' }}>
                                     <CardContent>
-                                        <Typography color="textSecondary" variant="subtitle2" gutterBottom>
-                                            {item.item_name.toUpperCase()}
-                                        </Typography>
+                                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                            <Typography color="textSecondary" variant="subtitle2">
+                                                {item.item_name.toUpperCase()}
+                                            </Typography>
+                                            <Avatar
+                                                src={getProductImage(item.item_name)}
+                                                variant="rounded"
+                                                sx={{ width: 40, height: 40, bgcolor: '#f5f5f5' }}
+                                            >
+                                                {item.item_name[0]?.toUpperCase()}
+                                            </Avatar>
+                                        </Box>
                                         <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
                                             {item.quantity}
                                         </Typography>
@@ -163,9 +185,28 @@ const WarehouseDashboard = () => {
                             pendingOrders.map((order) => (
                                 <TableRow key={order.id} hover>
                                     <TableCell>{order.id}</TableCell>
-                                    <TableCell>{order.product_name}</TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Avatar
+                                                src={getProductImage(order.product_name)}
+                                                variant="rounded"
+                                                sx={{ width: 32, height: 32, bgcolor: '#f5f5f5' }}
+                                            >
+                                                {order.product_name[0]?.toUpperCase()}
+                                            </Avatar>
+                                            {order.product_name}
+                                        </Box>
+                                    </TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
-                                    <TableCell>{order.username}</TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Avatar
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${order.username}`}
+                                                sx={{ width: 32, height: 32 }}
+                                            />
+                                            {order.username}
+                                        </Box>
+                                    </TableCell>
                                     <TableCell align="right">Rs {order.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 'bold', color: 'error.main' }}>
                                         Rs {order.manufacturer_price}
@@ -234,6 +275,9 @@ const WarehouseDashboard = () => {
                                                     </Button>
                                                 </Stack>
                                             )}
+                                            <IconButton onClick={() => handleRemoveOrder(order.id)} color="error" size="small">
+                                                <DeleteIcon />
+                                            </IconButton>
                                         </Stack>
                                     </TableCell>
                                 </TableRow>

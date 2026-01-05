@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert, Chip, Box, Stack } from '@mui/material';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Paper, TextField, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert, Chip, Box, Stack, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../services/api';
+import { PRODUCT_IMAGES, getProductImage, handleImageError } from '../constants/images';
+import { Avatar } from '@mui/material';
 
 const SalesmanDashboard = () => {
     const [orders, setOrders] = useState([]);
@@ -33,6 +36,12 @@ const SalesmanDashboard = () => {
             setMessage({ type: 'error', text: 'Failed to confirm order.' });
             setOpenSnackbar(true);
         }
+    };
+
+    const handleRemoveOrder = (orderId) => {
+        setOrders(orders.filter(order => order.id !== orderId));
+        setMessage({ type: 'info', text: 'Order dismissed from view.' });
+        setOpenSnackbar(true);
     };
 
     const openDeliverDialog = (order) => {
@@ -68,9 +77,12 @@ const SalesmanDashboard = () => {
 
     return (
         <Container sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                Salesman Dashboard
-            </Typography>
+            <Box display="flex" alignItems="center" gap={2} sx={{ mb: 4 }}>
+                <Avatar sx={{ bgcolor: '#1976d2', width: 56, height: 56 }}>S</Avatar>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                    Salesman Dashboard
+                </Typography>
+            </Box>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                 <Typography variant="h6" gutterBottom>Order Management</Typography>
                 <Table>
@@ -93,8 +105,27 @@ const SalesmanDashboard = () => {
                             orders.map((order) => (
                                 <TableRow key={order.id} hover>
                                     <TableCell>{order.id}</TableCell>
-                                    <TableCell>{order.username}</TableCell>
-                                    <TableCell>{order.product_name}</TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Avatar
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${order.username}`}
+                                                sx={{ width: 32, height: 32 }}
+                                            />
+                                            {order.username}
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Avatar
+                                                src={getProductImage(order.product_name)}
+                                                variant="rounded"
+                                                sx={{ width: 32, height: 32, bgcolor: '#f5f5f5' }}
+                                            >
+                                                {order.product_name[0]?.toUpperCase()}
+                                            </Avatar>
+                                            {order.product_name}
+                                        </Box>
+                                    </TableCell>
                                     <TableCell align="right">{order.quantity}</TableCell>
                                     <TableCell align="right">Rs {order.total_amount}</TableCell>
                                     <TableCell align="right" sx={{ color: 'error.main', fontWeight: 'bold' }}>
@@ -129,6 +160,9 @@ const SalesmanDashboard = () => {
                                                     Deliver & Pay
                                                 </Button>
                                             )}
+                                            <IconButton onClick={() => handleRemoveOrder(order.id)} color="error" size="small">
+                                                <DeleteIcon />
+                                            </IconButton>
                                         </Stack>
                                     </TableCell>
                                 </TableRow>

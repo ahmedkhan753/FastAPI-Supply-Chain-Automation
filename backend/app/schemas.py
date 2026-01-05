@@ -8,7 +8,6 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     role: Literal["shopkeeper", "salesman", "warehouse_manager", "manufacturer"]
-    product_name: Literal["candy", "snacks", "chocolates", "biscuits", "cold_drinks", "chewing_gums", "juices","jelly"]
 
 #For creating a user (registration)
 class UserCreate(UserBase):
@@ -31,12 +30,12 @@ class OrderBase(BaseModel):
     advance_payment: Optional[float] = 0.0
 
 class OrderCreate(BaseModel):
-    product_name: str
+    product_name: Literal["candy", "snacks", "chocolates", "biscuits", "cold_drinks", "chewing_gums", "juices", "jelly"]
     quantity: int
     advance_payment: Optional[float] = 0.0
 
 class OrderResponse(OrderBase):
-    product_name: str
+    product_name: Literal["candy", "snacks", "chocolates", "biscuits", "cold_drinks", "chewing_gums", "juices", "jelly"]
     quantity: int
     id: int
     user_id: int
@@ -54,7 +53,7 @@ class OrderConfirm(BaseModel):
     order_id: int
 
 class OrderAdminResponse(OrderResponse):
-    product_name: str
+    product_name: Literal["candy", "snacks", "chocolates", "biscuits", "cold_drinks", "chewing_gums", "juices", "jelly"]
     quantity: int
     username: str
     payments: list['PaymentResponse'] = []
